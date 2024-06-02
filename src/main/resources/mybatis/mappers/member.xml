@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member">
+	<!-- 로그인 -->
+	<select id="selectByIdPw" resultType="com.javaex.vo.MemberVo" parameterType="com.javaex.vo.MemberVo">
+		<![CDATA[
+			select no,name, address, gender, hp, age, locker_no as lockerNo, approval
+			from member
+			where id= #{id}
+			and password=#{password}
+		]]>
+	</select>
+
+	<!-- 회원가입 -->
+	<insert id="join" parameterType="com.javaex.vo.MemberVo">
+		<![CDATA[
+			insert into member
+			values(null, #{id}, #{password}, #{name}, #{address}, #{gender}, #{hp}, #{age}, #{lockerNo}, null, null)
+		]]>
+	</insert>
+
+	<!-- 아이디 중복체크 -->
+	<select id="idCheck" resultType="int" parameterType="String">
+		<![CDATA[
+			select count(id) from member where id=#{id}
+		]]>
+	</select>
+
+	<!-- 로그인 후 메인 화면 -->
+	<select id="selectMemberInfo" resultType="com.javaex.vo.MemberVo" parameterType="int">
+		<![CDATA[
+			select m.name, 
+						DATE_FORMAT(g.reg_date, '%Y-%m-%d') as regDate, 
+						DATE_FORMAT(g.deadline, '%Y-%m-%d') as deadline, 
+						p.pt_count as ptCount, 
+						t.name as trainerName, m.locker_no as lockerNo, approval
+			from member m
+			left join general g on m.no = g.no
+			left join pt p on m.no = p.no
+			left join trainer t on p.trainer_no = t.trainer_no
+			where m.no = #{no}
+			order by deadline desc
+			limit 1
+		]]>
+	</select>
+	
+	<!-- 회원정보 수정 폼폼  -->
+	<select id="selectMember" resultType="com.javaex.vo.MemberVo" parameterType="int">
+		<![CDATA[
+			select id, password, name, hp, age, address
+			from member 
+			where no = #{no}
+		]]>
+	</select>
+	
+
+	<!-- 로그인 후 회원정보 수정 -->
+	<update id="update" parameterType="com.javaex.vo.MemberVo">
+		<![CDATA[
+		update member
+		set
+        	password = #{password},
+        	name = #{name},
+        	hp = #{hp},
+        	age = #{age},
+        	address = #{address}
+		where no = #{no}
+		]]>
+	</update>
+	
+	<!-- 1번회원의 PT리스트 -->
+	<select id="selectMemberPt" resultType="com.javaex.vo.PtVo" parameterType="int">
+		<![CDATA[
+			select  p.pt_no as ptno,
+					p.no,
+			        p.trainer_no as trainerno,
+			        p.pt_count as ptcount,
+			        p.pt_total as pttotal,
+			        t.name as trainername
+			from pt p, trainer t
+			where p.trainer_no = t.trainer_no
+			and p.no = #{no}
+			]]>
+	</select>
+
+	<!-- 1번회원의 Lesson리스트 -->
+	<select id="selectLessonByPtNo" resultType="com.javaex.vo.LessonVo" parameterType="int">
+		<![CDATA[
+			select  p.pt_no as ptno,
+					p.no,
+			        p.trainer_no as trainerno,
+			        p.pt_count as ptcount,
+			        p.pt_total as pttotal,
+			        l.l_no as lno,
+			        l.l_date as ldate,
+			        l.comment
+			from pt p, lesson l
+			where p.pt_no = l.pt_no
+			and p.no = #{ptno}
+			]]>
+	</select>
+
+
+
+
+	<!-- 회원정보 + 해당회원의 lesson 정보 -->
+	<select id="selectMemberCmt" resultType="com.javaex.vo.MemberVo" parameterType="com.javaex.vo.MemberVo">
+		<![CDATA[
+			select  m.name,
+					m.hp,
+					l.l_date,
+					p.pt_total,
+					p.pt_count,
+					l.comment
+			from pt p, member m, lesson l
+			where p.no = m.no
+			and p.pt_no = l.pt_no
+			and m.no = #{no}
+			]]>
+	</select>
+	
+	<select id="lessonWrite" parameterType="int" resultType="com.javaex.vo.LessonVo">
+		<![CDATA[
+			select	member.no,
+						pt_no ptNo,
+				        pt_count
+				from member, pt
+				where member.no = pt.no
+				and member.no = #{no}
+				order by pt_count desc
+				limit 0, 1
+		]]>
+	</select>
+	
+	<insert id="lessonWrite2" parameterType="com.javaex.vo.LessonVo">
+		insert into lesson
+		values(null, #{ptNo}, #{comment}, now())
+	</insert>
+	
+	<update id="lessonUpdate" parameterType="com.javaex.vo.LessonVo">
+		<![CDATA[
+		update pt
+		set
+        	pt_count = pt_count - 1,
+        	pt_total = pt_total +1
+		where no = #{no}
+		]]>
+	</update>
+
+</mapper>
